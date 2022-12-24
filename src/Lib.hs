@@ -1,10 +1,11 @@
 module Lib where
---import System.Random
+import System.Random
 --import Data.List
+import System.IO
 
 toList :: [Char] -> Int -> [Char] -> [[Char]]
 toList allWords index curWord
-    | index >= length (allWords) = []
+    | index >= length (allWords) = curWord : []
     | allWords !! index == '\n' = curWord : toList allWords (index + 1) [] 
     | otherwise = toList allWords (index + 1) (curWord ++ [allWords !! index])
 
@@ -21,28 +22,28 @@ pickAword allWordsWithLengthN index = allWordsWithLengthN !! index
 ---standart game
 
 letterIsInTheWord :: (Foldable t, Eq a) => a -> t a -> Bool
-letterIsInTheWord letter word = elem letter word ----checks if a letter is in the word      ////// grey
+letterIsInTheWord letter word = elem letter word ----checks if a letter is in the word      
 
 letterIsInTheRightPlace :: Eq a => a -> [a] -> Int -> Bool
-letterIsInTheRightPlace letter word index = (word !! index) == letter ----checks if a letter is in the right index in the word          ////// yellow
+letterIsInTheRightPlace letter word index = (word !! index) == letter ----checks if a letter is in the right index in the word          
 
 letterisGreen :: Eq a => a -> [a] -> Int -> Bool
 letterisGreen letter word index =
     if (letterIsInTheWord letter word == True) && (letterIsInTheRightPlace letter word index) == True
         then True
-        else False  
+        else False  ----checks if the letter is in the word and is in the right place      ///green
 
 letterisYellow :: Eq a => a -> [a] -> Int -> Bool
 letterisYellow letter word index =
         if ((letterIsInTheWord letter word) == True && (letterIsInTheRightPlace letter word index) == False)
         then True
-        else False  
+        else False  ----if the letter exists in the word and is not at the right index, then returns True, else False
 
 letterisGrey :: (Foldable t, Eq a) => a -> t a -> Bool
 letterisGrey letter word =
     if ((letterIsInTheWord letter word) == False)
         then True
-        else False
+        else False ---- if the letter does not exist in the word, then the letter is grey->True, else False
 
 ----Returns a list of colors: "grey" if the current letter doesnt exist in the word
 ----"yellow" if the current letter exists in the word but is not in the right place
@@ -58,6 +59,11 @@ listOfColors wordWithLengthN guessedWord =
             | letterisGrey (guessedWord !! index) wordWithLengthN  == True = "grey" : returnList wordWithLengthN guessedWord (index + 1)
 
 
+allGreen [] = True
+allGreen (x:xs) =
+    if (x == "green")
+        then allGreen xs
+        else False
 
 ----Easy mode
 
@@ -119,5 +125,47 @@ addToTuple tuples letter index = (letter, index) : tuples
 
 
 main :: IO ()
-main = undefined
+main = do
+    putStrLn "What is the length 'n' of the word?"
+    en <- getLine
+    let n = (read en :: Int)
+    dictionary <- openFile "words.txt" ReadMode
+    contents <- hGetContents dictionary
+    ---print(filterWordsByN n (toList contents 0 ""))
+    randNum <- randomRIO (0, n :: Int)
+    print (filterWordsByN n (toList contents 0 ""))
+    playGame contents n randNum
+    
+    where 
+        playGame contents n randNum = do
+           
+            putStrLn "Guess a word with that length"
+            guessedWord <- getLine
+            if(guessedWord == "exit")
+                then putStrLn "Goodbye!"
+                else
+                if (((length guessedWord) > n) || ((length guessedWord) < n))
+                    then 
+                        --"Guessed a word with invalid length! Try again!"
+                        playGame contents n randNum
+                    else
+                        if (wordIsInDictionary guessedWord (filterWordsByN n (toList contents 0 "")))
+                            then
+                                if (allGreen (listOfColors (pickAword (filterWordsByN n (toList contents 0 "")) randNum ) guessedWord ))
+                                    then putStrLn "You won!"
+                                    else do
+                                        print (listOfColors (pickAword (filterWordsByN n (toList contents 0 "")) randNum ) guessedWord )
+                                        playGame contents n randNum
+
+                            else --putStrLn "Nope"
+                                playGame contents n randNum
+
+    
+---Да дооправя принтовете на playGame (do)
+---Да добавя питане за какъв режим иска да играе играча
+---Ако е Game -> ниво на сложност -> standart, easy expert
+---ако е Helper -> ...
+
+
+
 
