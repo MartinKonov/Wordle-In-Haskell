@@ -2,6 +2,7 @@ module Lib where
 import System.Random
 --import Data.List
 import System.IO
+import System.Directory
 
 toList :: [Char] -> Int -> [Char] -> [[Char]]
 toList allWords index curWord
@@ -25,20 +26,20 @@ letterIsInTheWord letter word = elem letter word ----checks if a letter is in th
 letterIsInTheRightPlace :: Eq a => a -> [a] -> Int -> Bool
 letterIsInTheRightPlace letter word index = (word !! index) == letter ----checks if a letter is in the right index in the word          
 
-letterisGreen :: Eq a => a -> [a] -> Int -> Bool
-letterisGreen letter word index =
+letterIsGreen :: Eq a => a -> [a] -> Int -> Bool
+letterIsGreen letter word index =
     if (letterIsInTheWord letter word == True) && (letterIsInTheRightPlace letter word index) == True
         then True
         else False  ----checks if the letter is in the word and is in the right place      ///green
 
-letterisYellow :: Eq a => a -> [a] -> Int -> Bool
-letterisYellow letter word index =
+letterIsYellow :: Eq a => a -> [a] -> Int -> Bool
+letterIsYellow letter word index =
         if ((letterIsInTheWord letter word) == True && (letterIsInTheRightPlace letter word index) == False)
         then True
         else False  ----if the letter exists in the word and is not at the right index, then returns True, else False
 
-letterisGrey :: (Foldable t, Eq a) => a -> t a -> Bool
-letterisGrey letter word =
+letterIsGrey :: (Foldable t, Eq a) => a -> t a -> Bool
+letterIsGrey letter word =
     if ((letterIsInTheWord letter word) == False)
         then True
         else False ---- if the letter does not exist in the word, then the letter is grey->True, else False
@@ -52,12 +53,12 @@ listOfColors wordWithLengthN guessedWord =
     where
         returnList wordWithLengthN guessedWord index 
             | index == (length guessedWord) = []
-            | letterisGreen (guessedWord !! index) wordWithLengthN index == True = "green" : returnList wordWithLengthN guessedWord (index + 1)
-            | letterisYellow (guessedWord !! index) wordWithLengthN index ==True = "yellow" : returnList wordWithLengthN guessedWord (index + 1)
-            | letterisGrey (guessedWord !! index) wordWithLengthN  == True = "grey" : returnList wordWithLengthN guessedWord (index + 1)
+            | letterIsGreen (guessedWord !! index) wordWithLengthN index == True = "green" : returnList wordWithLengthN guessedWord (index + 1)
+            | letterIsYellow (guessedWord !! index) wordWithLengthN index ==True = "yellow" : returnList wordWithLengthN guessedWord (index + 1)
+            | letterIsGrey (guessedWord !! index) wordWithLengthN  == True = "grey" : returnList wordWithLengthN guessedWord (index + 1)
 
 
-allGreen [] = True
+allGreen [] = True ----Given a list of strings, checks if every one of them is green
 allGreen (x:xs) =
     if (x == "green")
         then allGreen xs
@@ -81,14 +82,23 @@ addWordOrLetter usedWords word =
 
 
 ---- Да направя функция, която приема (лист от букви), дума -> ако всички букви не присъстват в думата, връща False иначе True -> (за 6.)
----- Given a list and a word, checks if every element in the list exists in the word
-allYellowsUsed :: (Foldable t, Eq a) => [a] -> t a -> Bool
-allYellowsUsed [] _ = True
-allYellowsUsed yellowList word 
-    | not (elem (head yellowList) word) = False
-    | otherwise = allYellowsUsed (tail yellowList) word  
+---- Given a guessed word , list and a word, returns a list of all the letters in the guessed word that are yellow and does not exist in the list
+
+allYellowsNotInList guessedword word lst =
+    check guessedword word lst 0
+    where
+        check guessedWord word lst index
+            | (null lst) = []
+            | (null guessedWord) = lst
+            | (letterIsYellow (head guessedWord) word index) && ((elem [(head guessedWord)] lst) == True) = (check (tail guessedWord) word (removeALetter lst [(head guessedWord)]) (index + 1))
+            | otherwise = check (tail guessedWord) word lst (index + 1)
 
 
+---- given a list of tuples (All of the green tuples) and a word, returns all of the letters that are known to be green, but aren't in the right place.
+allKnownGreensAreInWord word listOfTuples
+    | null listOfTuples = []
+    | [(word !! (snd (head listOfTuples)))] /= (fst (head listOfTuples)) = (head listOfTuples) : allKnownGreensAreInWord word (tail listOfTuples) 
+    | otherwise = allKnownGreensAreInWord word (tail listOfTuples) 
 
 ---- Да направя функция, която приема (лист от букви), буква -> премахва дадената буква от листа от букви -> (за 7.)
 ----(трябва lst да е от видя  ["a", "b", "c", "d"], a не от видя ['a', 'b', 'c', 'd'])
@@ -110,17 +120,75 @@ addToTuple tuples letter index = (letter, index) : tuples
 
 
 ---Creates a list from a given string seperated by space
-makeAList fromFile cur index 
-    | index >= length (fromFile) = cur : []
-    | fromFile !! index == ' ' = cur : makeAList fromFile [] (index + 1)
-    | otherwise = makeAList fromFile (cur ++ [fromFile !! index]) (index + 1)
+makeAList fromFile cur index
+    | (listed fromFile cur index) == [""] = []
+    | otherwise = (listed fromFile cur index)
+    where
+        listed fromFile cur index
+            | index >= (length fromFile) = cur : []
+            | fromFile !! index == ' ' = cur : makeAList fromFile [] (index + 1)
+            | otherwise = makeAList fromFile (cur ++ [fromFile !! index]) (index + 1)
+
+
+---Creates a list of tuples from a given a string
+makeAListOfGreens fromFile
+    | fromFile == "" = []
+    | otherwise = map (\x -> ((fst x), (read (snd x) :: Int))) (makeTuples fromFile 0)
+    where
+        makeTuples fromFile index
+            | (index + 2) >= ((length fromFile) - 1) = [([fromFile !! index], [fromFile !! (index + 1)])]
+            | otherwise = ([(fromFile !! index)] , [(fromFile !! (index + 1))]) : (makeTuples fromFile (index + 2))
 
 
 ---Makes a string from a given list of strings
-makeAString (x:xs)
-    | null xs = x
-    | otherwise = x ++ " " ++ (makeAString xs)
+makeAString lst
+    | null lst = []
+    | null (tail lst) = (head lst)
+    | otherwise = (head lst) ++ " " ++ (makeAString (tail lst))
 
+
+makeAStringFromTuples (x:xs)
+    | null xs = (fst x) ++ (show (snd x))
+    | otherwise = (fst x) ++ (show (snd x)) ++ (makeAStringFromTuples xs)
+
+
+---Given a word and a list, checks if any elements in the word exists in the list
+existsInList word lst
+    | null word = []
+    | elem [(head word)] lst = [(head word)] : existsInList (tail word) lst
+    | otherwise = existsInList (tail word) lst
+
+
+---Given a guessed word and a word, returns a list of all the grey letters 
+returnGrays guessedWord word
+    | null guessedWord = []
+    | letterIsGrey (head guessedWord) word = [(head guessedWord)] : returnGrays (tail guessedWord) word
+    | otherwise = returnGrays (tail guessedWord) word 
+
+---Given a guessed word and a word, returns a list of all the yellow letters
+returnYellows guessedWord word =
+    allYellows guessedWord word 0
+    where 
+        allYellows guessedWord word index
+            | null guessedWord = []
+            | letterIsYellow (head guessedWord) word index = [(head guessedWord)] : allYellows (tail guessedWord) word (index + 1)
+            | otherwise = allYellows (tail guessedWord) word (index + 1)
+
+---Given a guessed word and a word, returns a list of tuples of all the green letters and their locations
+returnGreens guessedWord word =
+    allGreens guessedWord word 0
+    where
+        allGreens guessedWord word index
+            | null guessedWord = []
+            | letterIsGreen (head guessedWord) word index = ([(head guessedWord)], index) : allGreens (tail guessedWord) word (index + 1)
+            | otherwise = allGreens (tail guessedWord) word (index + 1)
+
+
+---Given two lists, merges them with no duplicates
+mergeNoDups lst1 lst2 
+    | (null lst2) = lst1
+    | (elem (head lst2) lst1) = mergeNoDups lst1 (tail lst2)
+    | otherwise = mergeNoDups ((head lst2) : lst1) (tail lst2)
 
 
 ----1.Програмата ще пита потребителя в main за думата му. Ако тази дума не се среща в речника -> ще изпише думата не се среща в речника
@@ -133,8 +201,6 @@ makeAString (x:xs)
 ----8.Програмата ще има файл в който ще има списък от кортежи, където до всяка буква от думата ще има индекса, в който тя е била позната за "green"
 ----9.ако при някой ход буквата не е на същия индекс, а е на друг трябва да се изведе текст за това.
 
-
-
 main :: IO ()
 main = do
     putStrLn "What is the length 'n' of the word?"
@@ -143,7 +209,7 @@ main = do
     dictionary <- openFile "words.txt" ReadMode
     contents <- hGetContents dictionary
     ---print(filterWordsByN n (toList contents 0 ""))
-    randNum <- randomRIO (0, (length (filterWordsByN n (toList contents 0 ""))  :: Int))
+    randNum <- randomRIO (0, (length (filterWordsByN n (toList contents 0 "")) - 1  :: Int))
     print (filterWordsByN n (toList contents 0 ""))
     putStrLn "Choose a gamemode -> game or helper"
     gamemode <- getLine
@@ -152,22 +218,27 @@ main = do
         difficulty <- getLine
         if(difficulty == "standart") then do
             putStrLn "When you are done playing, type exit!"
-            playStandart contents n randNum
+            playStandart (toList contents 0 "") n randNum
             else if (difficulty == "easy") then do
                 putStrLn "When you are done playing, type exit!"
-                greensFile <- openFile "allGreens.txt" ReadWriteMode
-                yellowsFile <- openFile "allYellows.txt" ReadWriteMode
-                greysFile <- openFile "allGrey.txt" ReadWriteMode
-                greens <- hGetContents greensFile
-                yellows <- hGetContents yellowsFile
-                greys <- hGetContents greysFile
-                print (greys)
-                playEasy greens yellows greys contents n randNum
-                hClose greensFile
-                hClose yellowsFile
-                hClose greysFile
+                playEasy [] [] [] (pickAword (filterWordsByN n (toList contents 0 "")) randNum) (filterWordsByN n (toList contents 0 "")) n
+                
                 else putStrLn "TODO"
         else putStrLn "TODO"
+
+{-  
+    writeFile "allGreens.txt" ""
+    writeFile "allGrey.txt" ""
+    writeFile "allYellows.txt" ""
+    removeFile "allGreens.txt"
+    renameFile "greens2.txt" "allGreens.txt"
+
+    removeFile "allGrey.txt"
+    renameFile "greys2.txt" "allGrey.txt"
+
+    removeFile "allYellows.txt"
+    renameFile "yellows2.txt" "allYellows.txt"
+-}
     where 
         playStandart contents n randNum = do 
             putStrLn "Guess a word with that length"
@@ -180,32 +251,79 @@ main = do
                             putStrLn "Guessed a word with invalid length! Try again!"
                             playStandart contents n randNum
                         else
-                            if (allGreen (listOfColors (pickAword (filterWordsByN n (toList contents 0 "")) randNum ) guessedWord ))
+                            if (allGreen (listOfColors (pickAword (filterWordsByN n contents) randNum ) guessedWord ))
                                 then putStrLn "You won!"
                                 else do
-                                    print (listOfColors (pickAword (filterWordsByN n (toList contents 0 "")) randNum ) guessedWord )
+                                    print (listOfColors (pickAword (filterWordsByN n contents) randNum ) guessedWord )
                                     playStandart contents n randNum
-        playEasy greens yellows greys contents n randNum = do
+        playEasy greensLst yellowsLst greysLst pickedWord dict n = do
             putStrLn "Guess a word with that length"
+            print (pickedWord)
             guessedWord <- getLine
+            
             if(guessedWord == "exit")
                 then do
                     putStrLn "Goodbye!"
-                    writeFile "allGreens.txt" ""
                 else do
                     if (((length guessedWord) > n) || ((length guessedWord) < n))
                         then do
                             putStrLn "Guessed a word with invalid length! Try again!"
-                            playEasy greens yellows greys contents n randNum
+                            playEasy greensLst yellowsLst greysLst pickedWord dict n 
                         else
-                            if(not (wordIsInDictionary guessedWord (filterWordsByN n (toList contents 0 ""))))
+                            if(not (wordIsInDictionary guessedWord dict))
                                 then do
                                     putStrLn "The guessed word is not in the dictionary. Try again!"
-                                    playEasy greens yellows greys contents n randNum
+                                    playEasy greensLst yellowsLst greysLst pickedWord dict n 
                                 else do 
-                                    if (greys /= "") then
-                                        putStrLn "a"
-                                        else putStrLn "b"
+                                    if (allGreen (listOfColors pickedWord guessedWord))
+                                        then do 
+                                            putStrLn "You won!"
+                                        else do
+                                            if((existsInList guessedWord greysLst) /= [])
+                                                then do
+                                                    print (existsInList guessedWord greysLst)
+                                                    print ("The letters above are already known to be grey")
+                                                else print ('\n')
+                                            if ((allYellowsNotInList guessedWord pickedWord yellowsLst) /= [])
+                                                then do
+                                                    print(allYellowsNotInList guessedWord pickedWord yellowsLst)
+                                                    print ("The letters above are known to be yellow and are not in your word!")
+                                                    
+                                                else print ('\n')
+                                            
+                                            if ((allKnownGreensAreInWord guessedWord greensLst) /= [])
+                                                then do
+                                                    print(allKnownGreensAreInWord guessedWord greensLst)
+                                                    print ("The letters and indexes above are known to be green and are not green in your word!")
+                                                    else print ('\n')
+                                            
+                                            print(listOfColors pickedWord guessedWord)
+
+                                            
+                                            writeFile "allGrey.txt" (makeAString (mergeNoDups greysLst (returnGrays guessedWord pickedWord)))
+                                            writeFile "allYellows.txt" (makeAString (mergeNoDups yellowsLst (returnYellows guessedWord pickedWord)))
+                                            writeFile "allGreens.txt" (makeAStringFromTuples (mergeNoDups greensLst (returnGreens guessedWord pickedWord)))
+
+                                            greyContents <- readFile "allGrey.txt"
+                                            yellowContents <- readFile "allYellows.txt"
+                                            greenContents <- readFile "allGreens.txt"
+
+                                            playEasy (makeAListOfGreens greenContents) (makeAList yellowContents [] 0) (makeAList greyContents [] 0) pickedWord dict n
+                                            
+
+
+
+
+                                            
+
+
+
+                                            
+                                            
+                                            
+                                            
+                                            
+                                    
 
 
 
@@ -215,9 +333,9 @@ main = do
 ---в easy mode:
 ---Пита потребителя за input///
 ---ако думата която е вкарал потребителя не е в речника, да изкара съобщение и да loop-ne (да поиска нов вход)///
----да прочете нещата от allGrey.txt и да ги вкара в променлива -> да премине през думата и ако някоя от буквите в думата съществува в allGrey.txt да изпише че тази буква вече е използвана
----да прочете allYellows и да ги вкара в променлива -> да премине през променливата и ако всички букви от нея съществуват в нея да не прави нищо, иначе да изведе съобщение за всяка жълта буква,
----която не присъства в думата.
+---да прочете нещата от allGrey.txt и да ги вкара в променлива -> да премине през думата и ако някоя от буквите в думата съществува в allGrey.txt да изпише че тази буква вече е използвана///
+---да прочете allYellows и да ги вкара в променлива -> да премине през променливата и ако всички букви от нея съществуват в познатата дума да не прави нищо, иначе да изведе съобщение за всяка жълта буква,
+---която не присъства в думата.///
 ---да прочете allGreens и да ги вкара в променлива -> да премине през променливата и за всеки кортеж да провери индекса на всяка буква в думата, ако не съвпадат -> да изведе съобщение за
 ---съответната буква.
 ---ОТВАРЯ ВСИЧКО И ЧЕТЕ ПРЕДИ ДА ВЛЕЗЕ В PLEYEASY ФУНКЦИЯТА, ТЯ САМО ПИШЕ ВЪВ ФАЙЛОВЕТЕ
