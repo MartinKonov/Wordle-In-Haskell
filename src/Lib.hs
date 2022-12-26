@@ -19,8 +19,6 @@ pickAword allWordsWithLengthN index = allWordsWithLengthN !! index
         
 ---Regime "Game"
 
----standart game
-
 letterIsInTheWord :: (Foldable t, Eq a) => a -> t a -> Bool
 letterIsInTheWord letter word = elem letter word ----checks if a letter is in the word      
 
@@ -111,6 +109,19 @@ addToTuple :: [(a, b)] -> a -> b -> [(a, b)]
 addToTuple tuples letter index = (letter, index) : tuples
 
 
+---Creates a list from a given string seperated by space
+makeAList fromFile cur index 
+    | index >= length (fromFile) = cur : []
+    | fromFile !! index == ' ' = cur : makeAList fromFile [] (index + 1)
+    | otherwise = makeAList fromFile (cur ++ [fromFile !! index]) (index + 1)
+
+
+---Makes a string from a given list of strings
+makeAString (x:xs)
+    | null xs = x
+    | otherwise = x ++ " " ++ (makeAString xs)
+
+
 
 ----1.Програмата ще пита потребителя в main за думата му. Ако тази дума не се среща в речника -> ще изпише думата не се среща в речника
 ----2.Програмата ще добави думата към файл с вече използвани думи.
@@ -132,38 +143,92 @@ main = do
     dictionary <- openFile "words.txt" ReadMode
     contents <- hGetContents dictionary
     ---print(filterWordsByN n (toList contents 0 ""))
-    randNum <- randomRIO (0, n :: Int)
+    randNum <- randomRIO (0, (length (filterWordsByN n (toList contents 0 ""))  :: Int))
     print (filterWordsByN n (toList contents 0 ""))
-    playGame contents n randNum
-    
+    putStrLn "Choose a gamemode -> game or helper"
+    gamemode <- getLine
+    if (gamemode == "game") then do
+        putStrLn "pick difficulty -> standart, easy or expert"
+        difficulty <- getLine
+        if(difficulty == "standart") then do
+            putStrLn "When you are done playing, type exit!"
+            playStandart contents n randNum
+            else if (difficulty == "easy") then do
+                putStrLn "When you are done playing, type exit!"
+                greensFile <- openFile "allGreens.txt" ReadWriteMode
+                yellowsFile <- openFile "allYellows.txt" ReadWriteMode
+                greysFile <- openFile "allGrey.txt" ReadWriteMode
+                greens <- hGetContents greensFile
+                yellows <- hGetContents yellowsFile
+                greys <- hGetContents greysFile
+                print (greys)
+                playEasy greens yellows greys contents n randNum
+                hClose greensFile
+                hClose yellowsFile
+                hClose greysFile
+                else putStrLn "TODO"
+        else putStrLn "TODO"
     where 
-        playGame contents n randNum = do
-           
+        playStandart contents n randNum = do 
             putStrLn "Guess a word with that length"
             guessedWord <- getLine
             if(guessedWord == "exit")
                 then putStrLn "Goodbye!"
                 else
-                if (((length guessedWord) > n) || ((length guessedWord) < n))
-                    then 
-                        --"Guessed a word with invalid length! Try again!"
-                        playGame contents n randNum
-                    else
-                        if (wordIsInDictionary guessedWord (filterWordsByN n (toList contents 0 "")))
-                            then
-                                if (allGreen (listOfColors (pickAword (filterWordsByN n (toList contents 0 "")) randNum ) guessedWord ))
-                                    then putStrLn "You won!"
-                                    else do
-                                        print (listOfColors (pickAword (filterWordsByN n (toList contents 0 "")) randNum ) guessedWord )
-                                        playGame contents n randNum
+                    if (((length guessedWord) > n) || ((length guessedWord) < n))
+                        then do
+                            putStrLn "Guessed a word with invalid length! Try again!"
+                            playStandart contents n randNum
+                        else
+                            if (allGreen (listOfColors (pickAword (filterWordsByN n (toList contents 0 "")) randNum ) guessedWord ))
+                                then putStrLn "You won!"
+                                else do
+                                    print (listOfColors (pickAword (filterWordsByN n (toList contents 0 "")) randNum ) guessedWord )
+                                    playStandart contents n randNum
+        playEasy greens yellows greys contents n randNum = do
+            putStrLn "Guess a word with that length"
+            guessedWord <- getLine
+            if(guessedWord == "exit")
+                then do
+                    putStrLn "Goodbye!"
+                    writeFile "allGreens.txt" ""
+                else do
+                    if (((length guessedWord) > n) || ((length guessedWord) < n))
+                        then do
+                            putStrLn "Guessed a word with invalid length! Try again!"
+                            playEasy greens yellows greys contents n randNum
+                        else
+                            if(not (wordIsInDictionary guessedWord (filterWordsByN n (toList contents 0 ""))))
+                                then do
+                                    putStrLn "The guessed word is not in the dictionary. Try again!"
+                                    playEasy greens yellows greys contents n randNum
+                                else do 
+                                    if (greys /= "") then
+                                        putStrLn "a"
+                                        else putStrLn "b"
 
-                            else --putStrLn "Nope"
-                                playGame contents n randNum
+
+
 
     
----Да дооправя принтовете на playGame (do)
----Да добавя питане за какъв режим иска да играе играча
----Ако е Game -> ниво на сложност -> standart, easy expert
+
+---в easy mode:
+---Пита потребителя за input///
+---ако думата която е вкарал потребителя не е в речника, да изкара съобщение и да loop-ne (да поиска нов вход)///
+---да прочете нещата от allGrey.txt и да ги вкара в променлива -> да премине през думата и ако някоя от буквите в думата съществува в allGrey.txt да изпише че тази буква вече е използвана
+---да прочете allYellows и да ги вкара в променлива -> да премине през променливата и ако всички букви от нея съществуват в нея да не прави нищо, иначе да изведе съобщение за всяка жълта буква,
+---която не присъства в думата.
+---да прочете allGreens и да ги вкара в променлива -> да премине през променливата и за всеки кортеж да провери индекса на всяка буква в думата, ако не съвпадат -> да изведе съобщение за
+---съответната буква.
+---ОТВАРЯ ВСИЧКО И ЧЕТЕ ПРЕДИ ДА ВЛЕЗЕ В PLEYEASY ФУНКЦИЯТА, ТЯ САМО ПИШЕ ВЪВ ФАЙЛОВЕТЕ
+---пускам функцията минавам през всяка буква в думата и проверявам цвета и (с letterIsGreen, yellow...) в зависимост коя е, проверявам дали съществува в променливата на съответния файл и
+---ако не съществува я добавям най- отзад на листа. Ако letterIsGreen и кортежа на буквата и индекса и не съществуват в листа със зелени кортежи я добавям, иначе не.
+---презаписвам всеки файл с новите стойности на листовете им.
+---Когато играчът познае думата, изтривам съдържаниетпо на всеки файл и го затварям. Ако играчът напише exit изтривам съдържанието на всеки файл и го затварям.
+
+---LEARNING HASKELL WEEK07 INPUT/OUTPUT 23:45
+
+
 ---ако е Helper -> ...
 
 
