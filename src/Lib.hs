@@ -90,7 +90,7 @@ allYellowsNotInList guessedword word lst =
         check guessedWord word lst index
             | (null lst) = []
             | (null guessedWord) = lst
-            | (letterIsYellow (head guessedWord) word index) && ((elem [(head guessedWord)] lst) == True) = (check (tail guessedWord) word (removeALetter lst [(head guessedWord)]) (index + 1))
+            | (letterIsInTheWord (head guessedWord) word) && ((elem [(head guessedWord)] lst) == True) = (check (tail guessedWord) word (removeALetter lst [(head guessedWord)]) (index + 1))
             | otherwise = check (tail guessedWord) word lst (index + 1)
 
 
@@ -147,6 +147,7 @@ makeAString lst
     | otherwise = (head lst) ++ " " ++ (makeAString (tail lst))
 
 
+makeAStringFromTuples [] = ""
 makeAStringFromTuples (x:xs)
     | null xs = (fst x) ++ (show (snd x))
     | otherwise = (fst x) ++ (show (snd x)) ++ (makeAStringFromTuples xs)
@@ -218,29 +219,13 @@ main = do
         difficulty <- getLine
         if(difficulty == "standart") then do
             putStrLn "When you are done playing, type exit!"
-            playStandart (toList contents 0 "") n randNum
+            playStandart (pickAword (filterWordsByN n (toList contents 0 "")) randNum) n 
             else if (difficulty == "easy") then do
-                putStrLn "When you are done playing, type exit!"
                 playEasy [] [] [] (pickAword (filterWordsByN n (toList contents 0 "")) randNum) (filterWordsByN n (toList contents 0 "")) n
-                
                 else putStrLn "TODO"
         else putStrLn "TODO"
-
-{-  
-    writeFile "allGreens.txt" ""
-    writeFile "allGrey.txt" ""
-    writeFile "allYellows.txt" ""
-    removeFile "allGreens.txt"
-    renameFile "greens2.txt" "allGreens.txt"
-
-    removeFile "allGrey.txt"
-    renameFile "greys2.txt" "allGrey.txt"
-
-    removeFile "allYellows.txt"
-    renameFile "yellows2.txt" "allYellows.txt"
--}
     where 
-        playStandart contents n randNum = do 
+        playStandart pickedWord n = do 
             putStrLn "Guess a word with that length"
             guessedWord <- getLine
             if(guessedWord == "exit")
@@ -249,13 +234,13 @@ main = do
                     if (((length guessedWord) > n) || ((length guessedWord) < n))
                         then do
                             putStrLn "Guessed a word with invalid length! Try again!"
-                            playStandart contents n randNum
+                            playStandart pickedWord n
                         else
-                            if (allGreen (listOfColors (pickAword (filterWordsByN n contents) randNum ) guessedWord ))
+                            if (allGreen (listOfColors pickedWord guessedWord ))
                                 then putStrLn "You won!"
                                 else do
-                                    print (listOfColors (pickAword (filterWordsByN n contents) randNum ) guessedWord )
-                                    playStandart contents n randNum
+                                    print (listOfColors pickedWord guessedWord)
+                                    playStandart pickedWord n
         playEasy greensLst yellowsLst greysLst pickedWord dict n = do
             putStrLn "Guess a word with that length"
             print (pickedWord)
@@ -283,19 +268,19 @@ main = do
                                                 then do
                                                     print (existsInList guessedWord greysLst)
                                                     print ("The letters above are already known to be grey")
-                                                else print ('\n')
+                                                else return ()
                                             if ((allYellowsNotInList guessedWord pickedWord yellowsLst) /= [])
                                                 then do
                                                     print(allYellowsNotInList guessedWord pickedWord yellowsLst)
                                                     print ("The letters above are known to be yellow and are not in your word!")
                                                     
-                                                else print ('\n')
+                                                else return ()
                                             
                                             if ((allKnownGreensAreInWord guessedWord greensLst) /= [])
                                                 then do
                                                     print(allKnownGreensAreInWord guessedWord greensLst)
                                                     print ("The letters and indexes above are known to be green and are not green in your word!")
-                                                    else print ('\n')
+                                                    else return ()
                                             
                                             print(listOfColors pickedWord guessedWord)
 
