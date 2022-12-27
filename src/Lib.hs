@@ -192,6 +192,32 @@ mergeNoDups lst1 lst2
     | otherwise = mergeNoDups ((head lst2) : lst1) (tail lst2)
 
 
+---Given three lists and a word,  returns a list of all the indices of letters in the word that don't exist in any of the lists
+allLettersInLists greenLst greyLst yellowLst word =
+    helper greenLst greyLst yellowLst word 0
+    where
+        helper greenLst greyLst yellowLst word index
+            | index >= (length word) = []
+            | elem ([word !! index], index) greenLst = helper greenLst greyLst yellowLst word (index + 1)
+            | (elem ([word !! index]) greyLst) || (elem ([word !! index]) yellowLst) = helper greenLst greyLst yellowLst word (index + 1)
+            | otherwise = index : helper greenLst greyLst yellowLst word (index + 1)   
+
+
+---Given a list of true colors, a list of indices (where a lie is possible) and a random number (either 0 or 1), returns a list of colors, where all of the valid indices are a lie.
+listOfLIES listOfTrueColors listWhereToLie zeroOrOneForGreen zeroOrOneForYellow zeroOrOneForGrey =
+    helper listOfTrueColors listWhereToLie zeroOrOneForGreen zeroOrOneForYellow zeroOrOneForGrey 0
+    where
+        helper listOfTrueColors listWhereToLie zeroOrOneForGreen zeroOrOneForYellow zeroOrOneForGrey index
+            | index >= (length listOfTrueColors) = []
+            | (null listWhereToLie) = (listOfTrueColors !! index) : helper listOfTrueColors listWhereToLie zeroOrOneForGreen zeroOrOneForYellow zeroOrOneForGrey (index + 1)
+            | (head listWhereToLie) == index = (returnLie listOfTrueColors index zeroOrOneForGreen zeroOrOneForYellow zeroOrOneForGrey) : (helper listOfTrueColors (tail listWhereToLie) zeroOrOneForGreen zeroOrOneForYellow zeroOrOneForGrey (index + 1))
+            | otherwise = (listOfTrueColors !! index) : helper listOfTrueColors listWhereToLie zeroOrOneForGreen zeroOrOneForYellow zeroOrOneForGrey (index + 1)
+        returnLie listOfTrueColors curIndex zeroOrOneForGreen zeroOrOneForYellow zeroOrOneForGrey
+            | (listOfTrueColors !! curIndex) == "green" = ["grey", "yellow"] !! zeroOrOneForGreen
+            | (listOfTrueColors !! curIndex) == "yellow" = ["green", "grey"] !! zeroOrOneForYellow
+            | (listOfTrueColors !! curIndex) == "grey" = ["green", "yellow"] !! zeroOrOneForGrey
+
+
 ----1.Програмата ще пита потребителя в main за думата му. Ако тази дума не се среща в речника -> ще изпише думата не се среща в речника
 ----2.Програмата ще добави думата към файл с вече използвани думи.
 ----3.Програмата ще минава през всеки отделен отговор и ще записва в друг файл всички букви, които са били изведени като "grey"
@@ -201,6 +227,34 @@ mergeNoDups lst1 lst2
 ----7.ако при следващия вход някоя от тези букви е "green", то трябва да се махне от файла с "yellow" и да се добави като кортеж в списъка с "green"
 ----8.Програмата ще има файл в който ще има списък от кортежи, където до всяка буква от думата ще има индекса, в който тя е била позната за "green"
 ----9.ако при някой ход буквата не е на същия индекс, а е на друг трябва да се изведе текст за това.
+
+---в easy mode:
+---Пита потребителя за input///
+---ако думата която е вкарал потребителя не е в речника, да изкара съобщение и да loop-ne (да поиска нов вход)///
+---да прочете нещата от allGrey.txt и да ги вкара в променлива -> да премине през думата и ако някоя от буквите в думата съществува в allGrey.txt да изпише че тази буква вече е използвана///
+---да прочете allYellows и да ги вкара в променлива -> да премине през променливата и ако всички букви от нея съществуват в познатата дума да не прави нищо, иначе да изведе съобщение за всяка жълта буква,
+---която не присъства в думата.///
+---да прочете allGreens и да ги вкара в променлива -> да премине през променливата и за всеки кортеж да провери индекса на всяка буква в думата, ако не съвпадат -> да изведе съобщение за
+---съответната буква.
+---ОТВАРЯ ВСИЧКО И ЧЕТЕ ПРЕДИ ДА ВЛЕЗЕ В PLEYEASY ФУНКЦИЯТА, ТЯ САМО ПИШЕ ВЪВ ФАЙЛОВЕТЕ
+---пускам функцията минавам през всяка буква в думата и проверявам цвета и (с letterIsGreen, yellow...) в зависимост коя е, проверявам дали съществува в променливата на съответния файл и
+---ако не съществува я добавям най- отзад на листа. Ако letterIsGreen и кортежа на буквата и индекса и не съществуват в листа със зелени кортежи я добавям, иначе не.
+---презаписвам всеки файл с новите стойности на листовете им.
+
+---LEARNING HASKELL WEEK07 INPUT/OUTPUT 23:45
+
+---в expert mode:
+---Ще избира случайно число между 0 и 5 -> това число ще определя на кой ход програмата ще излъже.///
+---Ако на този ход, всяка буква от познатата дума съществува в allGreens, allGrey, allYellows, то тогава не лъжем на този ход -> програмата работи като в easy mode (но не подсказва), но
+---обръщам булев флаг на 1, който казва, че на следващия ход трябва да се излъже. Ако не може да се излъже пак, то пак работи като в easy mode (но не подсказва), но булевия флаг си остава на 1.///
+---Ако излъже успешно, то булевия флаг се обръща на 0 и програмата продължава до края без да излъже.
+---Когато програмата ще лъже ->
+---Пуска познатата дума във функция, която приема думата, greensLst, greysLst, yellowsLst, и избраната дума от програмата. Връща лист от местата на буквите, които не се срещат и в трите листа.//
+---Ако е празен, то променям флага на 1 и си минава на easy mode до края на хода., Ако не е празен:///
+---Пускам функция, която приема listOfColors (истинските цветове на думата) и листа от местата на буквите,които не се срещат в 3те листа.
+---Функцията минава през истинския вход и на индексите, в които буквите не съществуват в листовете, ги променя. (Ако истинския цвят на буквата е green, то избира случайно между
+---grey и yellow и го записва на мястото на green...) -> този отговор не се записва във файловете.
+
 
 main :: IO ()
 main = do
@@ -217,12 +271,16 @@ main = do
     if (gamemode == "game") then do
         putStrLn "pick difficulty -> standart, easy or expert"
         difficulty <- getLine
+        putStrLn "When you are done playing, type exit!"
         if(difficulty == "standart") then do
-            putStrLn "When you are done playing, type exit!"
             playStandart (pickAword (filterWordsByN n (toList contents 0 "")) randNum) n 
             else if (difficulty == "easy") then do
                 playEasy [] [] [] (pickAword (filterWordsByN n (toList contents 0 "")) randNum) (filterWordsByN n (toList contents 0 "")) n
-                else putStrLn "TODO"
+                else if (difficulty == "expert") then do
+                    lieOnMove <- randomRIO (0, 5 :: Int)
+                    playExpert [] [] [] (pickAword (filterWordsByN n (toList contents 0 "")) randNum) (filterWordsByN n (toList contents 0 "")) n 0 lieOnMove 0
+                    else
+                        print ("TODO")
         else putStrLn "TODO"
     where 
         playStandart pickedWord n = do 
@@ -243,7 +301,6 @@ main = do
                                     playStandart pickedWord n
         playEasy greensLst yellowsLst greysLst pickedWord dict n = do
             putStrLn "Guess a word with that length"
-            print (pickedWord)
             guessedWord <- getLine
             
             if(guessedWord == "exit")
@@ -279,7 +336,7 @@ main = do
                                             if ((allKnownGreensAreInWord guessedWord greensLst) /= [])
                                                 then do
                                                     print(allKnownGreensAreInWord guessedWord greensLst)
-                                                    print ("The letters and indexes above are known to be green and are not green in your word!")
+                                                    print ("The letters and indices above are known to be green and are not green in your word!")
                                                     else return ()
                                             
                                             print(listOfColors pickedWord guessedWord)
@@ -294,43 +351,72 @@ main = do
                                             greenContents <- readFile "allGreens.txt"
 
                                             playEasy (makeAListOfGreens greenContents) (makeAList yellowContents [] 0) (makeAList greyContents [] 0) pickedWord dict n
-                                            
+        playExpert greensLst yellowsLst greysLst pickedWord dict n curMove lieOnMove lie = do
+            
+            {-
+            print (greensLst)
+            print (greysLst)
+            print (yellowsLst)
+            -}
+            print (pickedWord)
+            
+            putStrLn "Guess a word with that length"
+            guessedWord <- getLine
+            if(guessedWord == "exit")
+                then do
+                    putStrLn "Goodbye!"
+                    else do
+                    if (((length guessedWord) > n) || ((length guessedWord) < n))
+                        then do
+                            putStrLn "Guessed a word with invalid length! Try again!"
+                            playExpert greensLst yellowsLst greysLst pickedWord dict n curMove lieOnMove lie
+                            else do
+                                if ((curMove == lieOnMove) || (lie == 1))
+                                    then do
+                                        if((allLettersInLists greensLst greysLst yellowsLst guessedWord) == [])
+                                            then do 
+                                                result <- playNormal greensLst greysLst yellowsLst guessedWord pickedWord
+                                                if(result == True)
+                                                    then
+                                                        putStrLn "You won!"
+                                                    else do
+                                                        greyContents <- readFile "allGrey.txt"
+                                                        yellowContents <- readFile "allYellows.txt"
+                                                        greenContents <- readFile "allGreens.txt"
+                                                        playExpert (makeAListOfGreens greenContents) (makeAList yellowContents [] 0) (makeAList greyContents [] 0) pickedWord dict n (curMove + 1) lieOnMove 1
+                                                else do
+                                                    zeroOrOneForGreen <- randomRIO (0, 1 :: Int)
+                                                    zeroOrOneForYellow <- randomRIO (0, 1 :: Int)
+                                                    zeroOrOneForGrey <- randomRIO (0, 1 :: Int)
+                                                    {-
+                                                    print ("liedHere")
+                                                    print (listOfColors pickedWord guessedWord)
+                                                    -}
+                                                    print (listOfLIES (listOfColors pickedWord guessedWord) (allLettersInLists greensLst greysLst yellowsLst guessedWord) zeroOrOneForGreen zeroOrOneForYellow zeroOrOneForGrey)
+                                                    playExpert greensLst yellowsLst greysLst pickedWord dict n (curMove+1) (-1) 0
+                                        else do
+                                            result <- playNormal greensLst greysLst yellowsLst guessedWord pickedWord
+                                            if(result == True)
+                                                then
+                                                    putStrLn "You won!"
+                                            else do
+                                                greyContents <- readFile "allGrey.txt"
+                                                yellowContents <- readFile "allYellows.txt"
+                                                greenContents <- readFile "allGreens.txt"
+                                                playExpert (makeAListOfGreens greenContents) (makeAList yellowContents [] 0) (makeAList greyContents [] 0) pickedWord dict n (curMove + 1) lieOnMove 0
+        playNormal greensLst greysLst yellowsLst guessedWord pickedWord = do
+            if (allGreen (listOfColors pickedWord guessedWord))
+                then do 
+                    return True
+                    else do 
+                        print(listOfColors pickedWord guessedWord)                    
+                        writeFile "allGrey.txt" (makeAString (mergeNoDups greysLst (returnGrays guessedWord pickedWord)))
+                        writeFile "allYellows.txt" (makeAString (mergeNoDups yellowsLst (returnYellows guessedWord pickedWord)))
+                        writeFile "allGreens.txt" (makeAStringFromTuples (mergeNoDups greensLst (returnGreens guessedWord pickedWord)))
+                        return False
 
 
-
-
-                                            
-
-
-
-                                            
-                                            
-                                            
-                                            
-                                            
-                                    
-
-
-
-
-    
-
----в easy mode:
----Пита потребителя за input///
----ако думата която е вкарал потребителя не е в речника, да изкара съобщение и да loop-ne (да поиска нов вход)///
----да прочете нещата от allGrey.txt и да ги вкара в променлива -> да премине през думата и ако някоя от буквите в думата съществува в allGrey.txt да изпише че тази буква вече е използвана///
----да прочете allYellows и да ги вкара в променлива -> да премине през променливата и ако всички букви от нея съществуват в познатата дума да не прави нищо, иначе да изведе съобщение за всяка жълта буква,
----която не присъства в думата.///
----да прочете allGreens и да ги вкара в променлива -> да премине през променливата и за всеки кортеж да провери индекса на всяка буква в думата, ако не съвпадат -> да изведе съобщение за
----съответната буква.
----ОТВАРЯ ВСИЧКО И ЧЕТЕ ПРЕДИ ДА ВЛЕЗЕ В PLEYEASY ФУНКЦИЯТА, ТЯ САМО ПИШЕ ВЪВ ФАЙЛОВЕТЕ
----пускам функцията минавам през всяка буква в думата и проверявам цвета и (с letterIsGreen, yellow...) в зависимост коя е, проверявам дали съществува в променливата на съответния файл и
----ако не съществува я добавям най- отзад на листа. Ако letterIsGreen и кортежа на буквата и индекса и не съществуват в листа със зелени кортежи я добавям, иначе не.
----презаписвам всеки файл с новите стойности на листовете им.
----Когато играчът познае думата, изтривам съдържаниетпо на всеки файл и го затварям. Ако играчът напише exit изтривам съдържанието на всеки файл и го затварям.
-
----LEARNING HASKELL WEEK07 INPUT/OUTPUT 23:45
-
+---идея -> всичие read и write да го правя в playNormal и като викна playNormal, той да вика playExpert вместо да връща нещо.
 
 ---ако е Helper -> ...
 
