@@ -203,7 +203,7 @@ allLettersInLists greenLst greyLst yellowLst word =
             | otherwise = index : helper greenLst greyLst yellowLst word (index + 1)   
 
 
----Given a list of true colors, a list of indices (where a lie is possible) and a random number (either 0 or 1), returns a list of colors, where all of the valid indices are a lie.
+---Given a list of true colors, a list of indices (where a lie is possible) and 3 random numbers (either 0 or 1), returns a list of colors, where all of the valid indices are a lie.
 listOfLIES listOfTrueColors listWhereToLie zeroOrOneForGreen zeroOrOneForYellow zeroOrOneForGrey =
     helper listOfTrueColors listWhereToLie zeroOrOneForGreen zeroOrOneForYellow zeroOrOneForGrey 0
     where
@@ -277,10 +277,11 @@ main = do
             else if (difficulty == "easy") then do
                 playEasy [] [] [] (pickAword (filterWordsByN n (toList contents 0 "")) randNum) (filterWordsByN n (toList contents 0 "")) n
                 else if (difficulty == "expert") then do
-                    lieOnMove <- randomRIO (0, 5 :: Int)
-                    playExpert [] [] [] (pickAword (filterWordsByN n (toList contents 0 "")) randNum) (filterWordsByN n (toList contents 0 "")) n 0 lieOnMove 0
-                    else
-                        print ("TODO")
+                    lieOnMove <- randomRIO (1, 6 :: Int)
+                    playExpert [] [] [] (pickAword (filterWordsByN n (toList contents 0 "")) randNum) (filterWordsByN n (toList contents 0 "")) n 0 lieOnMove
+                    else do 
+                        print ("We don't have that difficulty yet. Try again!")
+                        main
         else putStrLn "TODO"
     where 
         playStandart pickedWord n = do 
@@ -305,6 +306,8 @@ main = do
             
             if(guessedWord == "exit")
                 then do
+                    putStrLn "The word was:"
+                    print (pickedWord)
                     putStrLn "Goodbye!"
                 else do
                     if (((length guessedWord) > n) || ((length guessedWord) < n))
@@ -341,7 +344,24 @@ main = do
                                             
                                             print(listOfColors pickedWord guessedWord)
 
-                                            
+                                            writeFile "helpGrey.txt" (makeAString (mergeNoDups greysLst (returnGrays guessedWord pickedWord)))
+                                            writeFile "helpYellow.txt" (makeAString (mergeNoDups yellowsLst (returnYellows guessedWord pickedWord)))
+                                            writeFile "helpGreen.txt" (makeAStringFromTuples (mergeNoDups greensLst (returnGreens guessedWord pickedWord)))
+
+                                            removeFile "allGreens.txt"
+                                            removeFile "allGrey.txt"
+                                            removeFile "allYellows.txt"
+
+                                            renameFile "helpGrey.txt" "allGrey.txt"
+                                            renameFile "helpYellow.txt" "allYellows.txt"
+                                            renameFile "helpGreen.txt" "allGreens.txt"
+
+                                            greyContents <- readFile "allGrey.txt"
+                                            yellowContents <- readFile "allYellows.txt"
+                                            greenContents <- readFile "allGreens.txt"
+                                            playEasy (makeAListOfGreens greenContents) (makeAList yellowContents [] 0) (makeAList greyContents [] 0) pickedWord dict n
+
+                                {-
                                             writeFile "allGrey.txt" (makeAString (mergeNoDups greysLst (returnGrays guessedWord pickedWord)))
                                             writeFile "allYellows.txt" (makeAString (mergeNoDups yellowsLst (returnYellows guessedWord pickedWord)))
                                             writeFile "allGreens.txt" (makeAStringFromTuples (mergeNoDups greensLst (returnGreens guessedWord pickedWord)))
@@ -349,71 +369,65 @@ main = do
                                             greyContents <- readFile "allGrey.txt"
                                             yellowContents <- readFile "allYellows.txt"
                                             greenContents <- readFile "allGreens.txt"
-
-                                            playEasy (makeAListOfGreens greenContents) (makeAList yellowContents [] 0) (makeAList greyContents [] 0) pickedWord dict n
-        playExpert greensLst yellowsLst greysLst pickedWord dict n curMove lieOnMove lie = do
-            
-            {-
-            print (greensLst)
-            print (greysLst)
-            print (yellowsLst)
-            -}
-            print (pickedWord)
+                                -}                                         
+        playExpert greensLst yellowsLst greysLst pickedWord dict n curMove lieOnMove = do
             
             putStrLn "Guess a word with that length"
             guessedWord <- getLine
             if(guessedWord == "exit")
                 then do
+                    putStrLn "The word was:"
+                    print (pickedWord)
                     putStrLn "Goodbye!"
                     else do
-                    if (((length guessedWord) > n) || ((length guessedWord) < n))
-                        then do
-                            putStrLn "Guessed a word with invalid length! Try again!"
-                            playExpert greensLst yellowsLst greysLst pickedWord dict n curMove lieOnMove lie
-                            else do
-                                if ((curMove == lieOnMove) || (lie == 1))
-                                    then do
-                                        if((allLettersInLists greensLst greysLst yellowsLst guessedWord) == [])
-                                            then do 
-                                                result <- playNormal greensLst greysLst yellowsLst guessedWord pickedWord
-                                                if(result == True)
-                                                    then
-                                                        putStrLn "You won!"
-                                                    else do
-                                                        greyContents <- readFile "allGrey.txt"
-                                                        yellowContents <- readFile "allYellows.txt"
-                                                        greenContents <- readFile "allGreens.txt"
-                                                        playExpert (makeAListOfGreens greenContents) (makeAList yellowContents [] 0) (makeAList greyContents [] 0) pickedWord dict n (curMove + 1) lieOnMove 1
-                                                else do
-                                                    zeroOrOneForGreen <- randomRIO (0, 1 :: Int)
-                                                    zeroOrOneForYellow <- randomRIO (0, 1 :: Int)
-                                                    zeroOrOneForGrey <- randomRIO (0, 1 :: Int)
-                                                    {-
-                                                    print ("liedHere")
-                                                    print (listOfColors pickedWord guessedWord)
-                                                    -}
-                                                    print (listOfLIES (listOfColors pickedWord guessedWord) (allLettersInLists greensLst greysLst yellowsLst guessedWord) zeroOrOneForGreen zeroOrOneForYellow zeroOrOneForGrey)
-                                                    playExpert greensLst yellowsLst greysLst pickedWord dict n (curMove+1) (-1) 0
-                                        else do
-                                            result <- playNormal greensLst greysLst yellowsLst guessedWord pickedWord
-                                            if(result == True)
-                                                then
-                                                    putStrLn "You won!"
+                        if (((length guessedWord) > n) || ((length guessedWord) < n))
+                            then do
+                                putStrLn "Guessed a word with invalid length! Try again!"
+                                playExpert greensLst yellowsLst greysLst pickedWord dict n curMove lieOnMove
+                                else do
+                                    if (allGreen (listOfColors pickedWord guessedWord))
+                                        then
+                                            putStrLn "You won!"
                                             else do
-                                                greyContents <- readFile "allGrey.txt"
-                                                yellowContents <- readFile "allYellows.txt"
-                                                greenContents <- readFile "allGreens.txt"
-                                                playExpert (makeAListOfGreens greenContents) (makeAList yellowContents [] 0) (makeAList greyContents [] 0) pickedWord dict n (curMove + 1) lieOnMove 0
-        playNormal greensLst greysLst yellowsLst guessedWord pickedWord = do
-            if (allGreen (listOfColors pickedWord guessedWord))
-                then do 
-                    return True
-                    else do 
-                        print(listOfColors pickedWord guessedWord)                    
-                        writeFile "allGrey.txt" (makeAString (mergeNoDups greysLst (returnGrays guessedWord pickedWord)))
-                        writeFile "allYellows.txt" (makeAString (mergeNoDups yellowsLst (returnYellows guessedWord pickedWord)))
-                        writeFile "allGreens.txt" (makeAStringFromTuples (mergeNoDups greensLst (returnGreens guessedWord pickedWord)))
-                        return False
+                                                if (((curMove == lieOnMove)) && ((allLettersInLists greensLst greysLst yellowsLst guessedWord) /= []))
+                                                    then do
+                                                        zeroOrOneForGreen <- randomRIO (0, 1 :: Int)
+                                                        zeroOrOneForYellow <- randomRIO (0, 1 :: Int)
+                                                        zeroOrOneForGrey <- randomRIO (0, 1 :: Int)
+                                                        print (listOfLIES (listOfColors pickedWord guessedWord) (allLettersInLists greensLst greysLst yellowsLst guessedWord) zeroOrOneForGreen zeroOrOneForYellow zeroOrOneForGrey)
+                                                        playExpert greensLst yellowsLst greysLst pickedWord dict n (curMove+1) (-1)
+                                                        else do
+                                                            print(listOfColors pickedWord guessedWord)   
+                {-
+                                                            writeFile "allGrey.txt" (makeAString (mergeNoDups greysLst (returnGrays guessedWord pickedWord)))
+                                                            writeFile "allYellows.txt" (makeAString (mergeNoDups yellowsLst (returnYellows guessedWord pickedWord)))
+                                                            writeFile "allGreens.txt" (makeAStringFromTuples (mergeNoDups greensLst (returnGreens guessedWord pickedWord)))
+
+                                                            greyContents <- readFile "allGrey.txt"
+                                                            yellowContents <- readFile "allYellows.txt"
+                                                            greenContents <- readFile "allGreens.txt"
+                -}
+                                                            writeFile "helpGrey.txt" (makeAString (mergeNoDups greysLst (returnGrays guessedWord pickedWord)))
+                                                            writeFile "helpYellow.txt" (makeAString (mergeNoDups yellowsLst (returnYellows guessedWord pickedWord)))
+                                                            writeFile "helpGreen.txt" (makeAStringFromTuples (mergeNoDups greensLst (returnGreens guessedWord pickedWord)))
+
+                                                            removeFile "allGreens.txt"
+                                                            removeFile "allGrey.txt"
+                                                            removeFile "allYellows.txt"
+
+                                                            renameFile "helpGrey.txt" "allGrey.txt"
+                                                            renameFile "helpYellow.txt" "allYellows.txt"
+                                                            renameFile "helpGreen.txt" "allGreens.txt"
+
+                                                            greyContents <- readFile "allGrey.txt"
+                                                            yellowContents <- readFile "allYellows.txt"
+                                                            greenContents <- readFile "allGreens.txt"
+                                                            
+                                                            if (curMove == lieOnMove) 
+                                                                then
+                                                                    playExpert (makeAListOfGreens greenContents) (makeAList yellowContents [] 0) (makeAList greyContents [] 0) pickedWord dict n (curMove + 1) (lieOnMove + 1)
+                                                                    else
+                                                                        playExpert (makeAListOfGreens greenContents) (makeAList yellowContents [] 0) (makeAList greyContents [] 0) pickedWord dict n (curMove + 1) lieOnMove
 
 
 ---идея -> всичие read и write да го правя в playNormal и като викна playNormal, той да вика playExpert вместо да връща нещо.
