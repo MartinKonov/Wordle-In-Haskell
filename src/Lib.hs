@@ -347,7 +347,8 @@ main = do
             putStrLn "Guess a word with that length"
             guessedWord <- getLine
             if(guessedWord == "exit")
-                then putStrLn "Goodbye!"
+                then do
+                putStrLn "Goodbye!"
                 putStrLn "The word was:"
                 print (pickedWord)
                 else
