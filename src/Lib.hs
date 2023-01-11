@@ -13,7 +13,6 @@ toList allWords index curWord
 
 
 ---Filters all of the words with a given length "n" in the list of words
-filterWordsByN :: Foldable t => Int -> [t a] -> [t a]
 filterWordsByN n listOfWords = [x | x <- listOfWords, (length x) == n] 
 
 
@@ -23,7 +22,6 @@ pickAword allWordsWithLengthN index = allWordsWithLengthN !! index
         
 
 ---Checks if a given letter is in the word      
-letterIsInTheWord :: (Foldable t, Eq a) => a -> t a -> Bool
 letterIsInTheWord letter word = elem letter word 
 
 
@@ -49,7 +47,6 @@ letterIsYellow letter word index =
 
 
 ---If the letter does not exist in the word, then the letter is grey->True, else False
-letterIsGrey :: (Foldable t, Eq a) => a -> t a -> Bool
 letterIsGrey letter word =
     if ((letterIsInTheWord letter word) == False)
         then True
@@ -80,7 +77,6 @@ allGreen (x:xs) =
 
 
 ---Checks if the played word is in the dictionary
-wordIsInDictionary :: (Foldable t, Eq a) => a -> t a -> Bool
 wordIsInDictionary word allWords = elem word allWords
 
 
@@ -93,7 +89,6 @@ addWordOrLetter usedWords word =
 
 
 ---- Given a guessed word , list and a word, returns a list of all the letters in the guessed word that are yellow and does not exist in the list
-allYellowsNotInList :: (Foldable t, Eq a) => [a] -> t a -> [[a]] -> [[a]]
 allYellowsNotInList guessedword word lst =
     check guessedword word lst 0
     where
@@ -153,7 +148,6 @@ makeAListOfGreens fromFile
 
 
 ---Given a word and a list, checks if any elements in the word exists in the list
-existsInList :: (Foldable t, Eq a) => [a] -> t [a] -> [[a]]
 existsInList word lst
     | null word = []
     | elem [(head word)] lst = [(head word)] : existsInList (tail word) lst
@@ -161,7 +155,6 @@ existsInList word lst
 
 
 ---Given a guessed word and a word, returns a list of all the grey letters 
-returnGrays :: (Foldable t, Eq a) => [a] -> t a -> [[a]]
 returnGrays guessedWord word
     | null guessedWord = []
     | letterIsGrey (head guessedWord) word = [(head guessedWord)] : returnGrays (tail guessedWord) word
@@ -199,12 +192,12 @@ mergeNoDups lst1 lst2
 
 
 ---Given three lists and a word,  returns a list of all the indices of letters in the word that don't exist in any of the lists
-allLettersInLists :: (Eq a, Foldable t1, Foldable t2, Foldable t3) => t1 ([a], Int) -> t2 [a] -> t3 [a] -> [a] -> [Int]
 allLettersInLists greenLst greyLst yellowLst word =
     helper greenLst greyLst yellowLst word 0
     where
         helper greenLst greyLst yellowLst word index
             | index >= (length word) = []
+            | elem index (map (\x->(snd x)) greenLst) = helper greenLst greyLst yellowLst word (index + 1)
             | elem ([word !! index], index) greenLst = helper greenLst greyLst yellowLst word (index + 1)
             | (elem ([word !! index]) greyLst) || (elem ([word !! index]) yellowLst) = helper greenLst greyLst yellowLst word (index + 1)
             | otherwise = index : helper greenLst greyLst yellowLst word (index + 1)   
@@ -308,6 +301,8 @@ validate resultLst
     | otherwise = validate (tail resultLst)
 
 
+
+
 main :: IO ()
 main = do
     dictionary <- openFile "words.txt" ReadMode
@@ -320,7 +315,7 @@ main = do
         let n = (read wordLength :: Int)
         print (filterWordsByN n (toList contents 0 ""))
         randNum <- randomRIO (0, (length (filterWordsByN n (toList contents 0 "")) - 1  :: Int))
-        putStrLn "pick difficulty -> standart, easy or expert"
+        putStrLn "pick a difficulty -> standart, easy or expert"
         difficulty <- getLine
         putStrLn "To stop playing, type exit!"
         if(difficulty == "standart") then do
@@ -334,11 +329,19 @@ main = do
                         putStrLn "We don't have that difficulty yet. Try again!"
                         main
         else if (gamemode == "helper") then do
+            putStrLn "pick a difficulty -> standart or expert"
+            difficulty <- getLine
+            putStrLn "To stop playing, type exit!"
             putStrLn "What is the length 'n' of the word?"
             wordLength <- getLine
             let n = (read wordLength :: Int)
-            putStrLn "To stop playing, type exit!"
-            playHelper (filterWordsByN n (toList contents 0 "")) n
+            if (difficulty == "standart") then do
+                playHelper (filterWordsByN n (toList contents 0 "")) n
+                else if (difficulty == "expert") then do
+                    playHelperExpert [] (filterWordsByN n (toList contents 0 "")) n
+                    else do 
+                        putStrLn "We don't have that difficulty yet. Try again!"
+                        main
             else do 
                 putStrLn "We don't have that gamemode yet. Try again!"
                 main
@@ -430,6 +433,7 @@ main = do
                                                         zeroOrOneForGreen <- randomRIO (0, 1 :: Int)
                                                         zeroOrOneForYellow <- randomRIO (0, 1 :: Int)
                                                         zeroOrOneForGrey <- randomRIO (0, 1 :: Int)
+                                                        putStrLn " LIE"
                                                         print (listOfLIES (listOfColors pickedWord guessedWord) (allLettersInLists greensLst greysLst yellowsLst guessedWord) zeroOrOneForGreen zeroOrOneForYellow zeroOrOneForGrey)
                                                         playExpert greensLst yellowsLst greysLst pickedWord dict n (curMove+1) (-1)
                                                         else do
@@ -460,3 +464,48 @@ main = do
                                     playHelper possibleWords n
                                     else do
                                         playHelper (filterDict possibleWords (makeAList result "" 0) (bestGuess (possibleWords) (possibleWords) 0 "")) n
+        playHelperExpert possibleWordsInEveryMove possibleWords n = do
+            putStrLn "Possible words:"
+            print (possibleWords)
+            putStrLn "is it:"
+            print (bestGuess (possibleWords) (possibleWords) 0 "")
+            putStrLn "Enter result:"
+            result <- getLine
+
+            if(result == "yes" || result == "exit" || allGreen (makeAList result "" 0))
+                then do
+                    putStrLn "Thank you for playing!"
+                    else if ((length (makeAList result "" 0) > n || length(makeAList result "" 0) < n) || (not (validate (makeAList result "" 0))))
+                        then do
+                            putStrLn "Invalid input! Try again!"
+                            playHelperExpert possibleWordsInEveryMove possibleWords n
+                            else if (filterDict possibleWords (makeAList result "" 0) (bestGuess (possibleWords) (possibleWords) 0 "") == [])
+                                then do
+                                    hasLied (tail (reverse possibleWordsInEveryMove)) (head (reverse possibleWordsInEveryMove)) n
+                                    else do
+                                        playHelperExpert (possibleWordsInEveryMove ++ [possibleWords]) (filterDict possibleWords (makeAList result "" 0) (bestGuess (possibleWords) (possibleWords) 0 "")) n
+            where
+                hasLied possibleWordsInEveryMove curPossibleWords n = do
+                    putStrLn "Possible words:"
+                    print (curPossibleWords)
+                    putStrLn "is it:"
+                    print (bestGuess (curPossibleWords) (curPossibleWords) 0 "")
+                    putStrLn "Enter result:"
+                    result <- getLine
+                    if(result == "yes" || result == "exit" || allGreen (makeAList result "" 0))
+                        then do
+                            putStrLn "Thank you for playing!"
+                            else if ((length (makeAList result "" 0) > n || length(makeAList result "" 0) < n) || (not (validate (makeAList result "" 0))))
+                                then do
+                                    putStrLn "Invalid input! Try again!"
+                                    hasLied possibleWordsInEveryMove curPossibleWords n
+                                    else if (filterDict curPossibleWords (makeAList result "" 0) (bestGuess (curPossibleWords) (curPossibleWords) 0 "") == [])
+                                        then do
+                                            if(null possibleWordsInEveryMove)
+                                                then do
+                                                    putStrLn "The result you have entered doesn't match any of the words in the dictionary. Try again!"
+                                                    hasLied possibleWordsInEveryMove curPossibleWords n
+                                                else do
+                                                    hasLied (tail possibleWordsInEveryMove) (head possibleWordsInEveryMove) n
+                                            else do
+                                                hasLied possibleWordsInEveryMove (filterDict curPossibleWords (makeAList result "" 0) (bestGuess (curPossibleWords) (curPossibleWords) 0 "")) n
