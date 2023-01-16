@@ -433,7 +433,6 @@ main = do
                                                         zeroOrOneForGreen <- randomRIO (0, 1 :: Int)
                                                         zeroOrOneForYellow <- randomRIO (0, 1 :: Int)
                                                         zeroOrOneForGrey <- randomRIO (0, 1 :: Int)
-                                                        putStrLn " LIE"
                                                         print (listOfLIES (listOfColors pickedWord guessedWord) (allLettersInLists greensLst greysLst yellowsLst guessedWord) zeroOrOneForGreen zeroOrOneForYellow zeroOrOneForGrey)
                                                         playExpert greensLst yellowsLst greysLst pickedWord dict n (curMove+1) (-1)
                                                         else do
