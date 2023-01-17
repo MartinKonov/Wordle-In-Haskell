@@ -26,12 +26,10 @@ letterIsInTheWord letter word = elem letter word
 
 
 ---Checks if a letter is in the right index in the word
-letterIsInTheRightPlace :: Eq a => a -> [a] -> Int -> Bool
 letterIsInTheRightPlace letter word index = (word !! index) == letter 
 
 
 ---Checks if the letter is in the word and is in the right place
-letterIsGreen :: Eq a => a -> [a] -> Int -> Bool
 letterIsGreen letter word index =
     if (letterIsInTheWord letter word == True) && (letterIsInTheRightPlace letter word index) == True
         then True
@@ -39,7 +37,6 @@ letterIsGreen letter word index =
 
 
 ---If the letter exists in the word and is not at the right index, then returns True, else False
-letterIsYellow :: Eq a => a -> [a] -> Int -> Bool
 letterIsYellow letter word index =
         if ((letterIsInTheWord letter word) == True && (letterIsInTheRightPlace letter word index) == False)
         then True
@@ -56,7 +53,6 @@ letterIsGrey letter word =
 ----Returns a list of colors: "grey" if the current letter doesnt exist in the word
 ----"yellow" if the current letter exists in the word but is not in the right place
 ----"green" if the current letter exists in the word and is in the right place
-listOfColors :: Eq a => [a] -> [a] -> [String]
 listOfColors wordWithLengthN guessedWord =
     returnList wordWithLengthN guessedWord 0
     where
@@ -81,14 +77,14 @@ wordIsInDictionary word allWords = elem word allWords
 
 
 ----Given a list and a word -> adds the word to the list if the word is not already in the list, otherwise returns the list
-addWordOrLetter :: Eq a => [a] -> a -> [a]
 addWordOrLetter usedWords word =  
      if not (elem word usedWords) 
         then word : usedWords
         else usedWords 
 
 
----- Given a guessed word , list and a word, returns a list of all the letters in the guessed word that are yellow and does not exist in the list
+---- Given a list of letters, a guessed word and a word, for every letter in the guessed word, checks if it exists in the list and in the word, if it does - removes the letter from the list.
+---- Returns a list of letters that don't meet these conditions.
 allYellowsNotInList guessedword word lst =
     check guessedword word lst 0
     where
@@ -99,8 +95,7 @@ allYellowsNotInList guessedword word lst =
             | otherwise = check (tail guessedWord) word lst (index + 1)
 
 
----- given a list of tuples (All of the green tuples) and a word, returns all of the letters that are known to be green, but aren't in the right place.
-allKnownGreensAreInWord :: Eq a => [a] -> [([a], Int)] -> [([a], Int)]
+---- Given a list of tuples (All of the green tuples) and a word, returns all of the letters that are known to be green, but aren't in the right place.
 allKnownGreensAreInWord word listOfTuples
     | null listOfTuples = []
     | [(word !! (snd (head listOfTuples)))] /= (fst (head listOfTuples)) = (head listOfTuples) : allKnownGreensAreInWord word (tail listOfTuples) 
@@ -108,7 +103,6 @@ allKnownGreensAreInWord word listOfTuples
 
 
 ----removes the first instance of a letter in a list
-removeALetter :: Eq a => [a] -> a -> [a]
 removeALetter lst letter =
     (removeSingleLetter lst letter 0)
     where
@@ -162,7 +156,6 @@ returnGrays guessedWord word
 
 
 ---Given a guessed word and a word, returns a list of all the yellow letters
-returnYellows :: Eq a => [a] -> [a] -> [[a]]
 returnYellows guessedWord word =
     allYellows guessedWord word 0
     where 
@@ -173,7 +166,6 @@ returnYellows guessedWord word =
 
 
 ---Given a guessed word and a word, returns a list of tuples of all the green letters and their locations
-returnGreens :: Eq a => [a] -> [a] -> [([a], Int)]
 returnGreens guessedWord word =
     allGreens guessedWord word 0
     where
@@ -184,7 +176,6 @@ returnGreens guessedWord word =
 
 
 ---Given two lists, merges them with no duplicates
-mergeNoDups :: Eq a => [a] -> [a] -> [a]
 mergeNoDups lst1 lst2 
     | (null lst2) = lst1
     | (elem (head lst2) lst1) = mergeNoDups lst1 (tail lst2)
@@ -226,7 +217,6 @@ listOfLIES listOfTrueColors listWhereToLie zeroOrOneForGreen zeroOrOneForYellow 
 
 ---Given a dictionary (allWords), answer list (example -> ["yellow", "grey", "green"]) and a word, filters all of the words in the dictionary that do not contradict(possibleWord)
 ---with the answer list.
-filterDict :: Eq a => [[a]] -> [String] -> [a] -> [[a]]
 filterDict allWords curAnswerLst curGuess
     | null allWords = []
     | possibleWord curAnswerLst (head allWords) curGuess 0 == True = (head allWords) : (filterDict (tail allWords) curAnswerLst curGuess)
@@ -329,12 +319,12 @@ main = do
                         putStrLn "We don't have that difficulty yet. Try again!"
                         main
         else if (gamemode == "helper") then do
-            putStrLn "pick a difficulty -> standart or expert"
-            difficulty <- getLine
             putStrLn "To stop playing, type exit!"
             putStrLn "What is the length 'n' of the word?"
             wordLength <- getLine
             let n = (read wordLength :: Int)
+            putStrLn "pick a difficulty -> standart or expert"
+            difficulty <- getLine
             if (difficulty == "standart") then do
                 playHelper (filterWordsByN n (toList contents 0 "")) n
                 else if (difficulty == "expert") then do
