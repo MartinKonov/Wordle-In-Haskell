@@ -13,23 +13,27 @@ toList allWords index curWord
 
 
 ---Filters all of the words with a given length "n" in the list of words
+filterWordsByN :: Int -> [[Char]] -> [[Char]]
 filterWordsByN n listOfWords = [x | x <- listOfWords, (length x) == n] 
 
 
 ---Picks a word of the dictionary with length of n
-pickAword :: [a] -> Int -> a
+pickAword :: [[Char]] -> Int -> [Char]
 pickAword allWordsWithLengthN index = allWordsWithLengthN !! index 
         
 
----Checks if a given letter is in the word      
+---Checks if a given letter is in the word
+letterIsInTheWord :: Char -> [Char] -> Bool
 letterIsInTheWord letter word = elem letter word 
 
 
 ---Checks if a letter is in the right index in the word
+letterIsInTheRightPlace :: Char -> [Char] -> Int -> Bool
 letterIsInTheRightPlace letter word index = (word !! index) == letter 
 
 
 ---Checks if the letter is in the word and is in the right place
+letterIsGreen :: Char -> [Char] -> Int -> Bool
 letterIsGreen letter word index =
     if (letterIsInTheWord letter word == True) && (letterIsInTheRightPlace letter word index) == True
         then True
@@ -37,6 +41,7 @@ letterIsGreen letter word index =
 
 
 ---If the letter exists in the word and is not at the right index, then returns True, else False
+letterIsYellow :: Char -> [Char] -> Int -> Bool
 letterIsYellow letter word index =
         if ((letterIsInTheWord letter word) == True && (letterIsInTheRightPlace letter word index) == False)
         then True
@@ -44,6 +49,7 @@ letterIsYellow letter word index =
 
 
 ---If the letter does not exist in the word, then the letter is grey->True, else False
+letterIsGrey :: Char -> [Char] -> Bool 
 letterIsGrey letter word =
     if ((letterIsInTheWord letter word) == False)
         then True
@@ -53,6 +59,7 @@ letterIsGrey letter word =
 ----Returns a list of colors: "grey" if the current letter doesnt exist in the word
 ----"yellow" if the current letter exists in the word but is not in the right place
 ----"green" if the current letter exists in the word and is in the right place
+listOfColors :: [Char] -> [Char] -> [String]
 listOfColors wordWithLengthN guessedWord =
     returnList wordWithLengthN guessedWord 0
     where
@@ -73,6 +80,7 @@ allGreen (x:xs) =
 
 
 ---Checks if the played word is in the dictionary
+wordIsInDictionary :: [Char] -> [[Char]] -> Bool
 wordIsInDictionary word allWords = elem word allWords
 
 
@@ -85,6 +93,7 @@ addWordOrLetter usedWords word =
 
 ---- Given a list of letters, a guessed word and a word, for every letter in the guessed word, checks if it exists in the list and in the word, if it does - removes the letter from the list.
 ---- Returns a list of letters that don't meet these conditions.
+allYellowsNotInList :: [Char] -> [Char] -> [[Char]] -> [[Char]]
 allYellowsNotInList guessedword word lst =
     check guessedword word lst 0
     where
@@ -96,6 +105,7 @@ allYellowsNotInList guessedword word lst =
 
 
 ---- Given a list of tuples (All of the green tuples) and a word, returns all of the letters that are known to be green, but aren't in the right place.
+allKnownGreensAreInWord :: [Char] -> [([Char], Int)] -> [([Char], Int)]
 allKnownGreensAreInWord word listOfTuples
     | null listOfTuples = []
     | [(word !! (snd (head listOfTuples)))] /= (fst (head listOfTuples)) = (head listOfTuples) : allKnownGreensAreInWord word (tail listOfTuples) 
@@ -142,6 +152,7 @@ makeAListOfGreens fromFile
 
 
 ---Given a word and a list, checks if any elements in the word exists in the list
+existsInList :: [Char] -> [[Char]] -> [[Char]]
 existsInList word lst
     | null word = []
     | elem [(head word)] lst = [(head word)] : existsInList (tail word) lst
@@ -149,6 +160,7 @@ existsInList word lst
 
 
 ---Given a guessed word and a word, returns a list of all the grey letters 
+returnGrays :: [Char] -> [Char] -> [[Char]]
 returnGrays guessedWord word
     | null guessedWord = []
     | letterIsGrey (head guessedWord) word = [(head guessedWord)] : returnGrays (tail guessedWord) word
@@ -156,6 +168,7 @@ returnGrays guessedWord word
 
 
 ---Given a guessed word and a word, returns a list of all the yellow letters
+returnYellows :: [Char] -> [Char] -> [[Char]]
 returnYellows guessedWord word =
     allYellows guessedWord word 0
     where 
@@ -166,6 +179,7 @@ returnYellows guessedWord word =
 
 
 ---Given a guessed word and a word, returns a list of tuples of all the green letters and their locations
+returnGreens :: [Char] -> [Char] -> [([Char], Int)]
 returnGreens guessedWord word =
     allGreens guessedWord word 0
     where
@@ -183,6 +197,7 @@ mergeNoDups lst1 lst2
 
 
 ---Given three lists and a word,  returns a list of all the indices of letters in the word that don't exist in any of the lists
+allLettersInLists :: [([Char], Int)] -> [[Char]] -> [[Char]] -> [Char] -> [Int]
 allLettersInLists greenLst greyLst yellowLst word =
     helper greenLst greyLst yellowLst word 0
     where
@@ -217,12 +232,13 @@ listOfLIES listOfTrueColors listWhereToLie zeroOrOneForGreen zeroOrOneForYellow 
 
 ---Given a dictionary (allWords), answer list (example -> ["yellow", "grey", "green"]) and a word, filters all of the words in the dictionary that do not contradict(possibleWord)
 ---with the answer list.
+filterDict :: [[Char]] -> [String] -> [Char] -> [[Char]]
 filterDict allWords curAnswerLst curGuess
     | null allWords = []
     | possibleWord curAnswerLst (head allWords) curGuess 0 == True = (head allWords) : (filterDict (tail allWords) curAnswerLst curGuess)
     | otherwise = filterDict (tail allWords) curAnswerLst curGuess
     where
-        ---Given an answer list, current word, guess and an index, checks for every letter in the current word, if it condtradicts with the answer list. If the letter on index dies not
+        ---Given an answer list, current word, guess and an index, checks for every letter in the current word, if it condtradicts with the answer list. If the letter on index does not
         ---contradict with the answer list, calls recursively with incremented index. If the letter does contradict with the answer list => the current word contradicts with the answer list, 
         ---returns False. If the index >= length of the answer list, then all of the letters in the word do not contradict with the answer list => the current word is valid.
         possibleWord answerLst curWord guess index
@@ -261,6 +277,7 @@ filterDict allWords curAnswerLst curGuess
 
 
 ---Given two lists, (bestScore = 0) and (bestWord = "") returns the word with the best score.
+bestGuess :: [[Char]] -> [[Char]] -> Int -> String -> [Char]
 bestGuess lst1 lst2 bestScore bestWord
     | null lst1 = bestWord
     | (evalWord (head lst1) lst2) > bestScore = bestGuess (tail lst1) lst2 (evalWord (head lst1) lst2) (head lst1)
@@ -285,6 +302,7 @@ bestGuess lst1 lst2 bestScore bestWord
 
 
 ---Validates the result list
+validate :: [String] -> Bool
 validate resultLst
     | null resultLst = True
     | ((head resultLst) /= "green" && (head resultLst) /= "yellow" && (head resultLst) /= "grey") = False
